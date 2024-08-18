@@ -1,15 +1,19 @@
 from __future__ import print_function
 import datetime
-import pickle
 import os.path
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
+import pytz
 import os
 import time
 import pyttsx3
 import speech_recognition as sr
-import pytz
+import playsound
+from googleapiclient.discovery import build
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from googleapiclient.errors import HttpError
+from pytz import timezone
+#from gtts import gTTS
 
 
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
@@ -37,26 +41,48 @@ def get_audio():
     return said
 
 
+# def authenticate_google():
+#     creds = None
+#     if os.path.exists('token.pickle'):
+#         with open('token.pickle', 'rb') as token:
+#             creds = pickle.load(token)
+
+#     if not creds or not creds.valid:
+#         if creds and creds.expired and creds.refresh_token:
+#             creds.refresh(Request())
+#         else:
+#             flow = InstalledAppFlow.from_client_secrets_file(
+#                 'credentials.json', SCOPES)
+#             creds = flow.run_local_server(port=0)
+
+#         with open('token.pickle', 'wb') as token:
+#             pickle.dump(creds, token)
+
+#     service = build('calendar', 'v3', credentials=creds)
+
+#     return service
+
 def authenticate_google():
+    """Authenticates with the Google Calendar API and returns the service."""
     creds = None
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
+    if os.path.exists("token.json"):
+        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
+                "credentials.json", SCOPES
+            )
             creds = flow.run_local_server(port=0)
 
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
+        with open("token.json", "w") as token:
+            token.write(creds.to_json())
 
-    service = build('calendar', 'v3', credentials=creds)
-
+    service = build("calendar", "v3", credentials=creds)
     return service
+
 
 
 def get_events(day, service):
@@ -72,7 +98,7 @@ def get_events(day, service):
     events = events_result.get('items', [])
 
     if not events:
-        speak('No upcoming events found.')
+        speak('Hello! I found No upcoming events for this day.')
     else:
         speak(f"You have {len(events)} events on this day.")
 
@@ -142,6 +168,7 @@ def get_date(text):
     if day != -1:  
         return datetime.date(month=month, day=day, year=year)
 
+playsound.playsound("AI-Intro-Speech-Chryselle.mp4")
 
 
 SERVICE = authenticate_google()
